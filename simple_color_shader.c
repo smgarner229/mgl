@@ -6,22 +6,28 @@
 #include <string.h>
 #include <unistd.h>
 #include <time.h>
+#include <math.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
+#include "my_c_shader_library.h"
+
 const char *vertexShaderSource = "#version 330 core\n"
     "layout (location = 0) in vec3 aPos;\n"
+    "layout (location = 1) in vec3 color;\n"
     "out vec4 vertexColor;\n"
     "void main()\n"
     "{\n"
     "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "   vertexColor = vec4((aPos.x+1.)/2.,(aPos.y+1.)/2.,(aPos.z+1.)/2.,1.0);\n"
+    // "   vertexColor = vec4((aPos.x+1.)/2.,(aPos.y+1.)/2.,(aPos.z+1.)/2.,1.0);\n"
+    "   vertexColor = vec4(color.x,color.y,color.z,1.0);\n"
     "}\0";
 
 const char *fragmentShaderSource = "#version 330 core\n"
     "in vec4 vertexColor;\n"
     "out vec4 FragColor;\n"
+    // "uniform vec4 ourColor;\n"
     "void main()\n"
     "{\n"
     "   FragColor = vertexColor;\n"
@@ -32,7 +38,6 @@ void process_input(GLFWwindow* window);
 
 int main(int argc, char ** argv)
 {
-
   // Initialize the glfw library
   if(!glfwInit())
   {
@@ -72,68 +77,17 @@ int main(int argc, char ** argv)
     return EXIT_FAILURE;
   }
 
-  // Get the shaders together
-  int success;
-  char complog[512];
-
-  unsigned int vertexShader;
-  vertexShader=glCreateShader(GL_VERTEX_SHADER);
-  glShaderSource(vertexShader,1,&vertexShaderSource,NULL);
-  glCompileShader(vertexShader);
-  glGetShaderiv(vertexShader,GL_COMPILE_STATUS,&success);
-  if(!success)
-  {
-    glGetShaderInfoLog(vertexShader,512,NULL,complog);
-    printf("Error in compiling shader.\nError message printed below\n%s",complog);
-  }
-  
-
-  unsigned int fragmentShader;
-  fragmentShader=glCreateShader(GL_FRAGMENT_SHADER);
-  glShaderSource(fragmentShader,1,&fragmentShaderSource,NULL);
-  glCompileShader(fragmentShader);
-  glGetShaderiv(fragmentShader,GL_COMPILE_STATUS,&success);
-  if(!success)
-  {
-    glGetShaderInfoLog(fragmentShader,512,NULL,complog);
-    printf("Error in compiling fragment shader.\nError message printed below\n%s",complog);
-  }
-
-  // Link the shaders together
-  unsigned int shaderProgram;
-  shaderProgram = glCreateProgram();
-  glAttachShader(shaderProgram,vertexShader);
-  glAttachShader(shaderProgram,fragmentShader);
-  glLinkProgram(shaderProgram);
-  glGetProgramiv(shaderProgram,GL_LINK_STATUS,&success);
-  if(!success)
-  {
-    glGetProgramInfoLog(shaderProgram,512,NULL,complog);
-    printf("Error in program.\nError message printed below\n%s",complog);
-  }
-//  glUseProgram(shaderProgram);
-  glDeleteShader(vertexShader);
-  glDeleteShader(fragmentShader);
+  shader_program * my_prog = malloc(sizeof(shader_program));
+  init_shader_program(my_prog,"v.txt","f.txt");
 
   // Data for our triangle
-//  int n_pts = 9;
-//  float * verticies = (float*)malloc(sizeof(float)*n_pts);
-//  verticies[0]=-0.5; verticies[1]=-0.5; verticies[2]=0.0;
-//  verticies[3]=0.5; verticies[4]=-0.5; verticies[5]=0.0;
-//  verticies[6]=0.0; verticies[7]=0.5; verticies[8]=0.0;
-
-  // Data for our triangle
-  float vertices[21] = {
-      -0.75f, -0.75f, 0.0f, // left  
-       0.75f, -0.75f, 0.0f, // right 
-      -0.75f,  0.75f, 0.0f, // top
-       0.75f,  0.75f, 0.0f,
-       -1.0, -1.0, 0.0,
-       -1.0, -0.75, 0.0,
-       -0.75,-1.0,0.0
+  float vertices[18] = {
+      -0.9f, -0.9f, 0.0f, 1.0,0.0,0.0, // left  
+       0.9f, -0.9f, 0.0f, 0.0,1.0,0.0,// right 
+      -0.9f,  0.9f, 0.0f, 0.0,0.0,1.0,// top
   }; 
-  GLuint corners[9] = {
-    3,1,2,1,0,2,4,5,6
+  GLuint corners[3] = {
+    0,1,2
   };
   
   GLuint * VAO = (GLuint*)malloc(sizeof(GLuint));
@@ -146,18 +100,23 @@ int main(int argc, char ** argv)
   glBindBuffer(GL_ARRAY_BUFFER,*VBO);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,*EBO);
 
-  GLuint aPosIndex;
-  aPosIndex=glGetAttribLocation(shaderProgram,"aPos");
+  GLuint aPosIndex,colorIndex;
+  aPosIndex=glGetAttribLocation(my_prog->ID,"aPos");
+  colorIndex=glGetAttribLocation(my_prog->ID,"color");
+
   glEnableVertexAttribArray(aPosIndex);
-  glVertexAttribPointer(aPosIndex,3,GL_FLOAT,GL_FALSE,3*sizeof(GL_FLOAT),(GLvoid*)0);
-  glBufferData(GL_ARRAY_BUFFER,sizeof(GL_FLOAT)*21,vertices,GL_DYNAMIC_DRAW);
+  glEnableVertexAttribArray(colorIndex);
+
+  glVertexAttribPointer(aPosIndex,3,GL_FLOAT,GL_FALSE,6*sizeof(GL_FLOAT),(GLvoid*)0);
+  glVertexAttribPointer(colorIndex,3,GL_FLOAT,GL_FALSE,6*sizeof(GL_FLOAT),(GLvoid*)(3*sizeof(GL_FLOAT)));
+  
+  glBufferData(GL_ARRAY_BUFFER,sizeof(GL_FLOAT)*18,vertices,GL_DYNAMIC_DRAW);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER,sizeof(corners),corners,GL_DYNAMIC_DRAW);
 
   glBindBuffer(GL_ARRAY_BUFFER,0);
-  //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,0);
   glBindVertexArray(0);
 
-  glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+  //glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
 
   /* Loop until the user closes the window */
   while (!glfwWindowShouldClose(window))
@@ -168,13 +127,12 @@ int main(int argc, char ** argv)
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(shaderProgram);
+    glUseProgram(my_prog->ID);
     glBindVertexArray(*VAO);
-    // vertices[0]+=0.005;
-    // vertices[0] = (vertices[0] > 1.0 ? -1.0 : vertices[0]);
-    //glBufferData(GL_ARRAY_BUFFER,sizeof(vertices),vertices,GL_DYNAMIC_DRAW);
-    glDrawElements(GL_TRIANGLES,9,GL_UNSIGNED_INT,(GLvoid*)0);    
+    glDrawElements(GL_TRIANGLES,3,GL_UNSIGNED_INT,(GLvoid*)0);   
+
     glBindVertexArray(0);
+
     /* Swap front and back buffers */
     glfwSwapBuffers(window);
     /* Poll for and process events */
@@ -184,7 +142,7 @@ int main(int argc, char ** argv)
   glDeleteBuffers(1,VBO);
   glDeleteBuffers(1,EBO);
   glDeleteVertexArrays(1,VAO);
-  glDeleteProgram(shaderProgram);
+  glDeleteProgram(my_prog->ID);
 
   glfwTerminate();
   free(VAO);
