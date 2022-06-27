@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "my_c_shader_library.h": "c"
+        "my_c_shader_library.h": "c",
+        "cglm.h": "c"
     }
 }

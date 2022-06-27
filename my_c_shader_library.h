@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <glad/glad.h>
+#include <cglm/cglm.h>
 
 typedef struct shader_program{
     char * vertex_shader;
@@ -11,7 +12,6 @@ typedef struct shader_program{
 } shader_program;
 
 void init_shader_program(shader_program * prog, const char * vs, const char * fs);
-char * loadfile(const char * file_name);
 void delete_shader_program(shader_program * prog);
 void check_compile_errors(unsigned int shader, const char * type);
 void use_shader_program(shader_program * prog);

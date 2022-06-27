@@ -3,8 +3,34 @@
 #include <string.h>
 
 #include <glad/glad.h>
+#include <cglm/cglm.h>
 
 #include "my_c_shader_library.h"
+
+static char * loadfile(const char * file_name)
+{
+    FILE * fp = NULL;
+    long lSize;
+    char * buffer = NULL;
+
+    fp=fopen(file_name,"rb");
+    if(!fp){perror(file_name);}
+
+    fseek(fp,0L,SEEK_END);
+    lSize=ftell(fp);
+    rewind(fp);
+
+    buffer = malloc(lSize+1);
+    if(!buffer){fclose(fp);fprintf(stderr,"Couldn't malloc memory in load file\n");}
+    if(1!=fread(buffer,lSize,1,fp))
+    {
+        fclose(fp);
+        fprintf(stderr,"Error in loadfile fread\n");
+    }
+
+    fclose(fp);
+    return buffer;
+};
 
 void init_shader_program(shader_program * prog, const char * vs, const char * fs)
 {
@@ -40,35 +66,11 @@ void init_shader_program(shader_program * prog, const char * vs, const char * fs
     return;
 };
 
-char * loadfile(const char * file_name)
-{
-    FILE * fp;
-    long lSize;
-    char * buffer;
-
-    fp=fopen(file_name,"rb");
-    if(!fp){perror(file_name);}
-
-    fseek(fp,0L,SEEK_END);
-    lSize=ftell(fp);
-    rewind(fp);
-
-    buffer = malloc(lSize+1);
-    if(!buffer){fclose(fp);fprintf(stderr,"Couldn't malloc memory in load file\n");}
-    if(1!=fread(buffer,lSize,1,fp))
-    {
-        fclose(fp);
-        fprintf(stderr,"Error in loadfile fread\n");
-    }
-
-    fclose(fp);
-    return buffer;
-};
-
 void delete_shader_program(shader_program * prog)
 {
     free(prog->vertex_shader);
     free(prog->fragment_shader);
+    return;
 };
 
 void check_compile_errors(unsigned int shader, const char * type)

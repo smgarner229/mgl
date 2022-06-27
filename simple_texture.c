@@ -1,20 +1,18 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
-#include <assert.h>
-#include <errno.h>
-#include <string.h>
 #include <unistd.h>
-#include <time.h>
-#include <math.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
+
+#include <cglm/cglm.h>
 
 #include "my_c_shader_library.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void process_input(GLFWwindow* window);
+void reset_identity(float * mat);
 
 int main(int argc, char ** argv)
 {
@@ -58,7 +56,7 @@ int main(int argc, char ** argv)
   }
 
   shader_program * my_prog = malloc(sizeof(shader_program));
-  init_shader_program(my_prog,"v.txt","f.txt");
+  init_shader_program(my_prog,"v.glsl","f.glsl");
 
   // Data for our triangle
   float vertices[18] = {
@@ -68,6 +66,9 @@ int main(int argc, char ** argv)
   }; 
   GLuint corners[3] = {
     0,1,2
+  };
+  float texture_map[6] = {
+    0.0,0.0,0.5,1.0,0.0
   };
   
   GLuint * VAO = (GLuint*)malloc(sizeof(GLuint));
@@ -80,10 +81,17 @@ int main(int argc, char ** argv)
   glBindBuffer(GL_ARRAY_BUFFER,*VBO);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER,*EBO);
 
-  GLuint aPosIndex,colorIndex;
+  GLuint aPosIndex,colorIndex,transformIndex;
   aPosIndex=glGetAttribLocation(my_prog->ID,"aPos");
   colorIndex=glGetAttribLocation(my_prog->ID,"color");
-
+  glUseProgram(my_prog->ID);
+  transformIndex=glGetUniformLocation(my_prog->ID,"transform_1");
+  float identity[16] = {
+    1.0,0.0,0.0,0.0,
+    0.0,1.0,0.0,0.0,
+    0.0,0.0,1.0,0.0,
+    0.0,0.0,0.0,1.0
+  };
   glEnableVertexAttribArray(aPosIndex);
   glEnableVertexAttribArray(colorIndex);
 
@@ -99,7 +107,8 @@ int main(int argc, char ** argv)
   glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
   int count = 0;
   /* Loop until the user closes the window */
-  while (!glfwWindowShouldClose(window)&&count++<1000)
+  float rot_val=0.0;
+  while (!glfwWindowShouldClose(window))
   {
     process_input(window);
 
@@ -110,6 +119,10 @@ int main(int argc, char ** argv)
     glUseProgram(my_prog->ID);
     glBindVertexArray(*VAO);
     glDrawArrays(GL_TRIANGLES,0,3);
+    reset_identity(identity);
+    rot_val+=0.01;
+    glm_rotate(identity,rot_val,(vec4){0.0,1.0,0.0,0.0});
+    glUniformMatrix4fv(transformIndex,1,GL_FALSE,identity);
     // glDrawElements(GL_TRIANGLES,3,GL_UNSIGNED_INT,(GLvoid*)0);   
 
     glBindVertexArray(0);
@@ -151,3 +164,12 @@ void process_input(GLFWwindow* window)
   return;
 }
 
+void reset_identity(float * mat)
+{
+  for(int i = 0; i < 16; i++)
+    mat[i]=0.0;
+  mat[0]=1.0;
+  mat[5]=1.0;
+  mat[10]=1.0;
+  mat[15]=1.0;
+}

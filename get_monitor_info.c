@@ -32,7 +32,7 @@ int main(int argc, char ** argv)
   float xscale,yscale;
   glfwGetMonitorPos(*my_monitors,&width,&height);
   fprintf(stdout,"Monitor position is: %i,%i\n",width,height);
-//  glfwGetMonitorContentScale(monitor, &xscale, &yscale);
+//  glfwGetMonitorContentScale(my_monitors, &xscale, &yscale);
 //  glfwGetMonitorContentScale(*my_monitors,&xscale,&yscale);
 //  fprintf(stdout,"x & y scales are %f,%f\n",xscale,yscale);
 
